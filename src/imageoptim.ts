@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import program = require('commander');
 import { sync } from 'globby';
 import { homedir } from 'os';
-import { join } from 'path';
+import { parseImage } from 'image-marker';
 import { cli } from './';
 import {
   PNGQUANT_NUMBER_OF_COLORS,
@@ -12,9 +12,9 @@ import {
   TMPDIR,
   VERSION
 } from './constants';
-import { isSupported } from './is-supported';
 
 const patterns: string[] = [];
+const IMAGE_TAG = Buffer.from('min:cli');
 
 program
   .version(VERSION)
@@ -88,19 +88,46 @@ patterns.push(`!**/!(${supportedTypesPattern})`);
 
 const filePaths = sync(patterns.map((pattern) => pattern.replace('~', homedir())));
 
-cli({
-  batchSize: 300,
-  enabled: {
-    color: program.color === true,
-    imageAlpha: program.imagealpha === true,
-    imageOptim: program.imageoptim === true,
-    jpegMini: program.jpegmini === true,
-    quit: program.quit === true,
-    stats: program.stats === true
-  },
-  filePaths,
-  numberOfColors: program.numberOfColors || PNGQUANT_NUMBER_OF_COLORS,
-  quality: program.quality || PNGQUANT_QUALITY,
-  speed: program.speed || PNGQUANT_SPEED,
-  tmpDir: TMPDIR
-});
+const filterImgs = async (files: string[]) => {
+  let list = [];
+  for (let index = 0; index < files.length; index++) {
+    const filePath = files[index];
+    const checker = await parseImage(filePath, IMAGE_TAG);
+    const haveTag = await checker.haveTag();
+    console.log('haveTag:', haveTag, filePath);
+    if (!haveTag) {
+      list.push(filePath);
+    }
+  }
+  return list;
+};
+
+const addTags = async (files: string[]) => {
+  for (let index = 0; index < files.length; index++) {
+    const filePath = files[index];
+    const checker = await parseImage(filePath, IMAGE_TAG);
+    await checker.addTagAndSaveFile();
+  }
+};
+
+const start = async () => {
+  const files = await filterImgs(filePaths);
+  await cli({
+    batchSize: 300,
+    enabled: {
+      color: program.color === true,
+      imageAlpha: program.imagealpha === true,
+      imageOptim: program.imageoptim === true,
+      jpegMini: program.jpegmini === true,
+      quit: program.quit === true,
+      stats: program.stats === true
+    },
+    filePaths: files,
+    numberOfColors: program.numberOfColors || PNGQUANT_NUMBER_OF_COLORS,
+    quality: program.quality || PNGQUANT_QUALITY,
+    speed: program.speed || PNGQUANT_SPEED,
+    tmpDir: TMPDIR
+  });
+  await addTags(filePaths);
+};
+start();

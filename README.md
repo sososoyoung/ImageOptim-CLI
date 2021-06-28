@@ -1,4 +1,5 @@
-# ImageOptim-CLI
+# ImageOptim-CLI-js (Fork from ImageOptim-CLI)
+> Fork from https://github.com/JamieMason/ImageOptim-CLI, only keep js files.
 
 > Automates [ImageOptim](http://imageoptim.com), [ImageAlpha](http://pngmini.com), and [JPEGmini for Mac](http://jpegmini.com/mac) to make batch optimisation of images part of your automated build process.
 
