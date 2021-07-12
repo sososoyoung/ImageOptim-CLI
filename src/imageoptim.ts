@@ -3,6 +3,7 @@ import program = require('commander');
 import { sync } from 'globby';
 import { homedir } from 'os';
 import { parseImage } from 'image-marker';
+import { fromFile } from 'file-type';
 import { cli } from './';
 import {
   PNGQUANT_NUMBER_OF_COLORS,
@@ -15,6 +16,7 @@ import {
 
 const patterns: string[] = [];
 const IMAGE_TAG = Buffer.from('min:cli');
+const UNSUPPORTED_MIME = ['apng'];
 
 program
   .version(VERSION)
@@ -92,10 +94,11 @@ const filterImgs = async (files: string[]) => {
   let list = [];
   for (let index = 0; index < files.length; index++) {
     const filePath = files[index];
+    const typeInfo = await fromFile(filePath);
     const checker = await parseImage(filePath, IMAGE_TAG);
     const haveTag = await checker.haveTag();
-    console.log('haveTag:', haveTag, filePath);
-    if (!haveTag) {
+
+    if (!haveTag && !UNSUPPORTED_MIME.includes((typeInfo && typeInfo.ext) || '')) {
       list.push(filePath);
     }
   }
